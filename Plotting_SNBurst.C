@@ -2,21 +2,22 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
-#include <TFile.h>
-#include <TGraph.h>
-#include <TH1D.h>
-#include <THStack.h>
-#include <TLegend.h>
-#include <TCanvas.h>
-#include <TLine.h>
-#include <TStyle.h>
-#include <TText.h>
-#include <TROOT.h>
-#include "/nashome/p/plasorak/utils/colors.h"
+
+#include "TFile.h"
+#include "TGraph.h"
+#include "TH1D.h"
+#include "THStack.h"
+#include "TLegend.h"
+#include "TCanvas.h"
+#include "TLine.h"
+#include "TStyle.h"
+#include "TText.h"
+#include "TROOT.h"
+
+#include "colors.h"
 
 using namespace std;
-std::vector<int> SelectedConfig = {3};
-
+std::vector<int> SelectedConfig = {0,1,2,3,4,5};
 
 int main()
 {
@@ -24,50 +25,22 @@ int main()
   ifstream inFile;
   inFile.open("Analyse_SNBurst_"+s_Filename+".txt");
 
-  TString s_Filename2 = "ALEX";
-  ifstream inFile2;
-  inFile2.open("Analyse_SNBurst_"+s_Filename2+".txt");
-
-  std::map<std::pair<int,int>,std::pair<double,double>> map_ConfigToEffAndBkgd;
-  int TimeWindow;
+  std::map<int,std::pair<double,double>> map_ConfigToEffAndBkgd;
   int Config;
   double Eff, Bkgd, dummy;
-  std::vector<double> vec_TimeWindow;
   std::vector<int> vec_Config;
   
-  while(inFile >> TimeWindow >> Config >> Eff >> Bkgd >> dummy){
-    std::cout << "file1m TimeWindow " << TimeWindow
-      << ", Config " << Config
+  while(inFile >> Config >> Eff >> Bkgd >> dummy){
+    std::cout << "Config " << Config
       << ", Eff " << Eff
       << ", Bkgd " << Bkgd
       << std::endl;
-    if(TimeWindow <= 0) continue; // ONLY TREAT THE GOOD TW
-
-    // if(std::find(SelectedConfig.begin(), SelectedConfig.end(), Config) == SelectedConfig.end())
-    //   continue; // ONLY TREAT SELECTED CONFIGURATIONS
-
-    if(std::find(vec_TimeWindow.begin(), vec_TimeWindow.end(), TimeWindow) == vec_TimeWindow.end())
-      vec_TimeWindow.push_back(TimeWindow);
 
     if(std::find(vec_Config.begin(), vec_Config.end(), Config) == vec_Config.end())
       vec_Config.push_back(Config);
     
-    map_ConfigToEffAndBkgd[{TimeWindow,Config}] = {Eff,Bkgd};
+    map_ConfigToEffAndBkgd[Config] = {Eff,Bkgd};
   }
-  
-  std::map<std::pair<int,int>,std::pair<double,double>> map_ConfigToEffAndBkgd2;
-  while(inFile2 >> TimeWindow >> Config >> Eff >> Bkgd >> dummy){
-    std::cout << "file2 TimeWindow " << TimeWindow
-      << ", Config " << Config
-      << ", Eff " << Eff
-      << ", Bkgd " << Bkgd
-      << std::endl;
-    if(TimeWindow <= 0) continue; // ONLY TREAT THE GOOD TW
-    map_ConfigToEffAndBkgd2[{TimeWindow,Config}] = {Eff,Bkgd};
-  }
-
-  int nTimeWindow = (int)vec_TimeWindow.size();
-  std::cout << "There are " << nTimeWindow << " time windows." << std::endl;
   
   int nConfig = (int)vec_Config.size();
   std::cout << "There are " << nConfig << " configs." << std::endl;
@@ -80,77 +53,35 @@ int main()
   h_SNProbabilityVDistance->SetLineColor(46);
 
   TFile *f_Input  = new TFile("Analyse_SNBurst_GH_SNMC.root", "READ");
-  TFile *f_Input2 = new TFile("Analyse_SNBurst_ALEX.root", "READ");
-  std::cout << "Alex's config" << std::endl;
-  std::cout << "config " << map_ConfigToEffAndBkgd2.begin()->first.second << std::endl;
-  std::cout << "tw     " << map_ConfigToEffAndBkgd2.begin()->first.first << std::endl;
-  
-  TH1D*   h_Alex_FakeRateVNClusters    = (TH1D*  )f_Input2->Get(Form("h_FakeRateVNClusters_Config%i_TimeWindow%i",
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.second,
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.first));
-  TH1D*   h_Alex_FakeRateVNClustersLow = (TH1D*  )f_Input2->Get(Form("h_FakeRateVNClustersLow_Config%i_TimeWindow%i",
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.second,
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.first));
-  TH1D*   h_Alex_EfficiencyVEvents     = (TH1D*  )f_Input2->Get(Form("h_EfficiencyVEvents_Config%i_TimeWindow%i",
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.second,
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.first));
-  TH1D*   h_Alex_EfficiencyVDistance   = (TH1D*  )f_Input2->Get(Form("h_EfficiencyVDistance_Config%i_TimeWindow%i",
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.second,
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.first));
-  TH1D*   h_Alex_EffGalaxy             = (TH1D*  )f_Input2->Get(Form("h_NeighbourhoodEffiency_Config%i_TimeWindow%i",
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.second,
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.first));
-  TGraph* g_Alex_ROC                   = (TGraph*)f_Input2->Get(Form("g_ROC_Config%i_TimeWindow%i",
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.second,
-                                                                     map_ConfigToEffAndBkgd2.begin()->first.first));
+  std::map<int,TH1D*>   map_h_FakeRateVNClusters;
+  std::map<int,TH1D*>   map_h_FakeRateVNClustersLow;
+  std::map<int,TH1D*>   map_h_EfficiencyVEvents;
+  std::map<int,TH1D*>   map_h_EfficiencyVDistance;
+  std::map<int,TH1D*>   map_h_EffGalaxy;
+  std::map<int,TGraph*> map_g_ROC;
 
-  
-
-  
-  std::map<std::pair<int,int>,TH1D*>   map_h_FakeRateVNClusters;
-  std::map<std::pair<int,int>,TH1D*>   map_h_FakeRateVNClustersLow;
-  std::map<std::pair<int,int>,TH1D*>   map_h_EfficiencyVEvents;
-  std::map<std::pair<int,int>,TH1D*>   map_h_EfficiencyVDistance;
-  std::map<std::pair<int,int>,TH1D*>   map_h_EffGalaxy;
-  std::map<std::pair<int,int>,TGraph*> map_g_ROC;
-  std::map<int, TGraph*>               map_g_EfficiencyVTimeWindow;
-
-  std::vector<int>::iterator it_Config2;
-
-  for(it_Config2  = vec_Config.begin();
-      it_Config2 != vec_Config.end(); ++it_Config2){
-    int config=*it_Config2;
-    std::cout << "Creating " << config << std::endl;
-    map_g_EfficiencyVTimeWindow[config] = new TGraph(vec_TimeWindow.size()-2);
-    map_g_EfficiencyVTimeWindow[config]->SetName(Form("g_EffVTime_Config%i", config));
-    map_g_EfficiencyVTimeWindow[config]->SetMarkerColor(vec_Colors[config]);
-    map_g_EfficiencyVTimeWindow[config]->SetMarkerStyle(3);
-    map_g_EfficiencyVTimeWindow[config]->SetLineColor  (vec_Colors[config]);
-  }
-
-  std::map<std::pair<int,int>,std::pair<double,double>>::iterator it_Config;
+  std::map<int,std::pair<double,double>>::iterator it_Config;
   int globalIt=0;
-  for(it_Config  = map_ConfigToEffAndBkgd.begin();
-      it_Config != map_ConfigToEffAndBkgd.end(); ++it_Config){
+  for(auto const& it_Config : map_ConfigToEffAndBkgd){
     int color = vec_Colors.at(globalIt % vec_Colors.size());
 
-    int config     = (*it_Config).first.second;
-    int TimeWindow = (*it_Config).first.first;
-  
-    std::cout << "Dealing with Config " << config << ", time window: " << TimeWindow << std::endl;
-    TString s_FakeRateVNClusters     = Form("h_FakeRateVNClusters_Config%i_TimeWindow%i",    config, TimeWindow);
-    TString s_FakeRateVNClustersLow  = Form("h_FakeRateVNClustersLow_Config%i_TimeWindow%i", config, TimeWindow);
-    TString s_EfficiencyVEvents      = Form("h_EfficiencyVEvents_Config%i_TimeWindow%i",     config, TimeWindow);
-    TString s_EfficiencyVDistance    = Form("h_EfficiencyVDistance_Config%i_TimeWindow%i",   config, TimeWindow);
-    TString s_EffGalaxy              = Form("h_NeighbourhoodEffiency_Config%i_TimeWindow%i", config, TimeWindow);
-    TString s_ROC                    = Form("g_ROC_Config%i_TimeWindow%i",                   config, TimeWindow);
+    int config     = it_Config.first;
+    
+    std::cout << "Dealing with Config " << config << std::endl;
+    TString s_FakeRateVNClusters     = Form("h_FakeRateVNClusters_Config%i",    config);
+    TString s_FakeRateVNClustersLow  = Form("h_FakeRateVNClustersLow_Config%i", config);
+    TString s_EfficiencyVEvents      = Form("h_EfficiencyVEvents_Config%i",     config);
+    TString s_EfficiencyVDistance    = Form("h_EfficiencyVDistance_Config%i",   config);
+    TString s_EffGalaxy              = Form("h_NeighbourhoodEffiency_Config%i", config);
+    TString s_ROC                    = Form("g_ROC_Config%i",                   config);
     
     TH1D *h_FakeRateVNClusters    = (TH1D*)f_Input->Get(s_FakeRateVNClusters); 
-    TH1D *h_FakeRateVNClustersLow = (TH1D*)f_Input->Get(s_FakeRateVNClustersLow); 
+    TH1D *h_FakeRateVNClustersLow = (TH1D*)f_Input->Get(s_FakeRateVNClustersLow);
     
     TH1D *h_EfficiencyVEvents = (TH1D*)f_Input->Get(s_EfficiencyVEvents);
     if(!h_EfficiencyVEvents){
-      map_ConfigToEffAndBkgd.erase(it_Config);
+      std::cout << "Erasing config " << config << " as there is no EfficiencyVEvents plot" << std::endl;
+      map_ConfigToEffAndBkgd.erase(config);
       continue;
     }
 
@@ -176,118 +107,36 @@ int main()
 
     g_ROC->SetMarkerStyle(3);
 
-    map_h_FakeRateVNClusters   [{TimeWindow,config}] = h_FakeRateVNClusters;
-    map_h_FakeRateVNClustersLow[{TimeWindow,config}] = h_FakeRateVNClustersLow;
-    map_h_EfficiencyVEvents    [{TimeWindow,config}] = h_EfficiencyVEvents;
-    map_h_EfficiencyVDistance  [{TimeWindow,config}] = h_EfficiencyVDistance;
-    map_h_EffGalaxy            [{TimeWindow,config}] = h_EffGalaxy;
-    map_g_ROC                  [{TimeWindow,config}] = g_ROC;
+    map_h_FakeRateVNClusters   [config] = h_FakeRateVNClusters;
+    map_h_FakeRateVNClustersLow[config] = h_FakeRateVNClustersLow;
+    map_h_EfficiencyVEvents    [config] = h_EfficiencyVEvents;
+    map_h_EfficiencyVDistance  [config] = h_EfficiencyVDistance;
+    map_h_EffGalaxy            [config] = h_EffGalaxy;
+    map_g_ROC                  [config] = g_ROC;
     globalIt++;    
   }
   TCanvas *c_Global = new TCanvas();
   c_Global->Print("Results.pdf[");
-  std::vector<double>::iterator it_TimeWindow2;
-  it_Config2;
-  int j=0;
-  for(it_Config2  = vec_Config.begin();
-      it_Config2 != vec_Config.end(); ++it_Config2){
-    map_g_EfficiencyVTimeWindow[*it_Config2]->SetMarkerColor(vec_Colors[j]);
-    j++;
-    int i=0;
-    for(it_TimeWindow2  = vec_TimeWindow.begin();
-        it_TimeWindow2 != vec_TimeWindow.end(); ++it_TimeWindow2){
-      if((*it_TimeWindow2)<=100)continue;
-      TH1D* eff = map_h_EfficiencyVDistance[{*it_TimeWindow2,*it_Config2}];
-      int bin = eff->FindBin(50.);
-      double binc = eff->GetBinContent(bin);
-      std::cout << " binc " << binc << std::endl;
-      map_g_EfficiencyVTimeWindow[*it_Config2]->SetPoint(i, *it_TimeWindow2,binc);
-      i++;
-    }
-  }
-
   std::string legHeader = "Individual Marley Eff & 10kt Bkgd Rate";
-  std::string legEntryFormat = "Eff: %.2f & Bkgd rate: %.2f Hz";
+  std::string legEntryFormat = "Config: %i - Eff: %.2f & Bkgd rate: %.2f Hz";
   
-  map_g_EfficiencyVTimeWindow[0]->SetMaximum(5);
-  gPad->SetLogy();
-  //gPad->SetLogx();
-  map_g_EfficiencyVTimeWindow[0]->SetMinimum(0.01);
-  map_g_EfficiencyVTimeWindow[0]->Draw("AP");
-  map_g_EfficiencyVTimeWindow[0]->SetTitle("");
-  map_g_EfficiencyVTimeWindow[0]->GetXaxis()->SetTitle("Time window [ms]");
-  map_g_EfficiencyVTimeWindow[0]->GetYaxis()->SetTitle("Efficiency");
-  TLegend *leg_EfficiencyVTimeWindow = new TLegend(0.5, 0.7, 0.9, 0.9);
-  for(it_Config2  = vec_Config.begin();
-      it_Config2 != vec_Config.end(); ++it_Config2){
-    map_g_EfficiencyVTimeWindow[*it_Config2]->Draw("PC");
-    std::cout << map_ConfigToEffAndBkgd[{5000,*it_Config2}].second << std::endl;
-    leg_EfficiencyVTimeWindow->AddEntry(map_g_EfficiencyVTimeWindow[*it_Config2],
-                                        Form(legEntryFormat.c_str(),
-                                             map_ConfigToEffAndBkgd[{5000,*it_Config2}].first,
-                                             map_ConfigToEffAndBkgd[{5000,*it_Config2}].second));
-  }
-  leg_EfficiencyVTimeWindow->Draw();
-  c_Global->Print("Results.pdf");
-  c_Global->Print("Results.pdf]");
-  exit(0);
-  int color = vec_Colors.at(globalIt % vec_Colors.size());
-  h_Alex_FakeRateVNClusters   ->SetLineColor(color);
-  h_Alex_FakeRateVNClustersLow->SetLineColor(color);
-  h_Alex_EfficiencyVEvents    ->SetLineColor(color);
-  h_Alex_EfficiencyVDistance  ->SetLineColor(color);
-  h_Alex_EffGalaxy            ->SetLineColor(color);
-
-  h_Alex_FakeRateVNClusters   ->SetLineStyle(2);
-  h_Alex_FakeRateVNClustersLow->SetLineStyle(2);
-  h_Alex_EfficiencyVEvents    ->SetLineStyle(2);
-  h_Alex_EfficiencyVDistance  ->SetLineStyle(2);
-  h_Alex_EffGalaxy            ->SetLineStyle(2);
-
-  h_Alex_FakeRateVNClusters   ->SetLineWidth(2);
-  h_Alex_FakeRateVNClustersLow->SetLineWidth(2);
-  h_Alex_EfficiencyVEvents    ->SetLineWidth(2);
-  h_Alex_EfficiencyVDistance  ->SetLineWidth(2);
-  h_Alex_EffGalaxy            ->SetLineWidth(2);
-
-  g_Alex_ROC                  ->SetMarkerColor(color);
-  h_Alex_FakeRateVNClusters   ->SetMarkerColor(color);
-  h_Alex_FakeRateVNClustersLow->SetMarkerColor(color);
-  h_Alex_EfficiencyVEvents    ->SetMarkerColor(color);
-  h_Alex_EfficiencyVDistance  ->SetMarkerColor(color);
-  h_Alex_EffGalaxy            ->SetMarkerColor(color);
-  g_Alex_ROC                  ->SetMarkerColor(color);
-
-  
-  
-
-
   THStack *stk_FakeRateVNClusters = new THStack("stk_FakeRateVNClusters", "Number of Clusters in Time Window Required to Trigger vs. Trigger Rate");
   TLegend *leg_FakeRateVNClusters = new TLegend(0.05, 0.05, 0.95, 0.95);
-  leg_FakeRateVNClusters->SetTextSize(0.023);
+  //leg_FakeRateVNClusters->SetTextSize(0.023);
   leg_FakeRateVNClusters->SetHeader(legHeader.c_str());
 
-  for(it_Config  = map_ConfigToEffAndBkgd.begin();
-      it_Config != map_ConfigToEffAndBkgd.end(); ++it_Config){
-    stk_FakeRateVNClusters->Add(map_h_FakeRateVNClusters     [it_Config->first]);
-    stk_FakeRateVNClusters->Add(map_h_FakeRateVNClustersLow  [it_Config->first]);
-    leg_FakeRateVNClusters->AddEntry(map_h_FakeRateVNClusters[it_Config->first],
-                                     Form(legEntryFormat.c_str(), it_Config->first.first, it_Config->second.first, it_Config->second.second), "L");
+  for(auto const& it_Config : map_ConfigToEffAndBkgd){
+    stk_FakeRateVNClusters->Add(map_h_FakeRateVNClusters     [it_Config.first]);
+    stk_FakeRateVNClusters->Add(map_h_FakeRateVNClustersLow  [it_Config.first]);
+    leg_FakeRateVNClusters->AddEntry(map_h_FakeRateVNClusters[it_Config.first],
+                                     Form(legEntryFormat.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "L");
   }
-  stk_FakeRateVNClusters->Add(h_Alex_FakeRateVNClusters);
-  stk_FakeRateVNClusters->Add(h_Alex_FakeRateVNClustersLow);
-  // leg_FakeRateVNClusters->AddEntry(h_Alex_FakeRateVNClusters, Form("Alex TW: 10000 ms, Eff: %.2f & Bkgd rate: %.2f Hz",
-  //                                                                  map_ConfigToEffAndBkgd2.begin()->second.first,
-  //                                                                  map_ConfigToEffAndBkgd2.begin()->second.second));
-
-  c_Global->Draw();
-
   leg_FakeRateVNClusters->Draw();
   c_Global->Print("Results.pdf");
 
   c_Global->SetLogy();
   stk_FakeRateVNClusters->SetMinimum(1e-9);
-  stk_FakeRateVNClusters->Draw("NOSTACK HIST");
+  stk_FakeRateVNClusters->Draw("NOSTACK C");
   
   stk_FakeRateVNClusters->GetXaxis()->SetTitle("Number of Clusters/Time Window");
   stk_FakeRateVNClusters->GetYaxis()->SetTitle("Trigger Rate, (Hz)");
@@ -312,7 +161,6 @@ int main()
   l_perWeek ->Draw();
   l_perDay  ->Draw();
   gPad->RedrawAxis(); 
-  //leg_FakeRateVNClusters->Draw();
   c_Global->Print("Results.pdf");
 
   THStack *stk_EfficiencyVEvents = new THStack("stk_EfficiencyVEvents", "Efficiency vs. Number of Events in SN Burst, Fake Trigger Rate: 1/Month");
@@ -320,15 +168,10 @@ int main()
   leg_EfficiencyVEvents->SetTextSize(0.023);
   
   leg_EfficiencyVEvents->SetHeader(legHeader.c_str());
-  for(it_Config  = map_ConfigToEffAndBkgd.begin();
-      it_Config != map_ConfigToEffAndBkgd.end(); ++it_Config){
-    stk_EfficiencyVEvents->Add(map_h_EfficiencyVEvents     [it_Config->first]);
-    leg_EfficiencyVEvents->AddEntry(map_h_EfficiencyVEvents[it_Config->first], Form(legEntryFormat.c_str(), it_Config->first.first, it_Config->second.first, it_Config->second.second), "L");
+  for(auto const& it_Config : map_ConfigToEffAndBkgd){
+    stk_EfficiencyVEvents->Add(map_h_EfficiencyVEvents     [it_Config.first]);
+    leg_EfficiencyVEvents->AddEntry(map_h_EfficiencyVEvents[it_Config.first], Form(legEntryFormat.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "L");
   }
-  stk_EfficiencyVEvents->Add(h_Alex_EfficiencyVEvents);
-  leg_EfficiencyVEvents->AddEntry(h_Alex_EfficiencyVEvents, Form("Alex TW: 10000 ms, Eff: %.2f & Bkgd rate: %.2f Hz",
-                                                                  map_ConfigToEffAndBkgd2.begin()->second.first,
-                                                                  map_ConfigToEffAndBkgd2.begin()->second.second));
   c_Global->Clear();
   c_Global->SetLogy(false);
   c_Global->Draw();
@@ -345,16 +188,11 @@ int main()
   leg_EfficiencyVDistance->SetTextSize(0.023);
 
   leg_EfficiencyVDistance->SetHeader(legHeader.c_str());
-  for(it_Config  = map_ConfigToEffAndBkgd.begin();
-      it_Config != map_ConfigToEffAndBkgd.end(); ++it_Config){
-    stk_EfficiencyVDistance->Add(map_h_EfficiencyVDistance[it_Config->first]);
-    leg_EfficiencyVDistance->AddEntry(map_h_EfficiencyVDistance[it_Config->first], 
-                                      Form(legEntryFormat.c_str(), it_Config->first.first, it_Config->second.first, it_Config->second.second), "L");
+  for(auto const& it_Config : map_ConfigToEffAndBkgd){
+    stk_EfficiencyVDistance->Add(map_h_EfficiencyVDistance[it_Config.first]);
+    leg_EfficiencyVDistance->AddEntry(map_h_EfficiencyVDistance[it_Config.first], 
+                                      Form(legEntryFormat.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "L");
   }
-  stk_EfficiencyVDistance->Add(h_Alex_EfficiencyVDistance);
-  leg_EfficiencyVDistance->AddEntry(h_Alex_EfficiencyVDistance, Form("Alex TW: 10000 ms, Eff: %.2f & Bkgd rate: %.2f Hz",
-                                                                     map_ConfigToEffAndBkgd2.begin()->second.first,
-                                                                     map_ConfigToEffAndBkgd2.begin()->second.second));
   c_Global->Clear();
   c_Global->Draw();
   c_Global->SetLogx();
@@ -373,16 +211,11 @@ int main()
   leg_EffGalaxy->SetHeader(legHeader.c_str());
   stk_EffGalaxy->Add(h_SNProbabilityVDistance);
 
-  for(it_Config =  map_ConfigToEffAndBkgd.begin();
-      it_Config != map_ConfigToEffAndBkgd.end(); ++it_Config){
-    stk_EffGalaxy->Add(map_h_EffGalaxy[it_Config->first]);
-    leg_EffGalaxy->AddEntry(map_h_EffGalaxy[it_Config->first],
-                            Form(legEntryFormat.c_str(), it_Config->first.first, it_Config->second.first, it_Config->second.second), "L");
+  for(auto const& it_Config : map_ConfigToEffAndBkgd){
+    stk_EffGalaxy->Add(map_h_EffGalaxy[it_Config.first]);
+    leg_EffGalaxy->AddEntry(map_h_EffGalaxy[it_Config.first],
+                            Form(legEntryFormat.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "L");
   }
-  stk_EffGalaxy->Add(h_Alex_EffGalaxy);
-  leg_EffGalaxy->AddEntry(h_Alex_EffGalaxy, Form("Alex TW: 10000 ms, Eff: %.2f & Bkgd rate: %.2f Hz",
-                                                 map_ConfigToEffAndBkgd2.begin()->second.first,
-                                                 map_ConfigToEffAndBkgd2.begin()->second.second));
   leg_EffGalaxy->AddEntry(h_SNProbabilityVDistance, "SN Probability", "L");
   c_Global->Clear();
   c_Global->Draw();
@@ -402,25 +235,22 @@ int main()
   leg_ROC->SetHeader(legHeader.c_str());
   c_Global->Clear();
   c_Global->Draw();
-  double minX=0.9, maxX=1;
-  double minY=10e-15, maxY=20e2;
+  double minX=0.6, maxX=1;
+  double minY=10e-15, maxY=10;
 
   map_g_ROC.begin()->second->GetXaxis()->SetLimits(minX, maxX);
-  map_g_ROC.begin()->second->GetYaxis()->SetLimits(minY, maxY);
+  map_g_ROC.begin()->second->SetMaximum(maxY);
+  map_g_ROC.begin()->second->SetMinimum(minY);
   map_g_ROC.begin()->second->SetTitle("Fake Trigger Rate vs. Galactic Neighbourhood Coverage");
   map_g_ROC.begin()->second->GetXaxis()->SetTitle("Galactic Neighbourhood Coverage");
   map_g_ROC.begin()->second->GetYaxis()->SetTitle("Fake Trigger Rate, (Hz)");
+  map_g_ROC.begin()->second->SetMaximum(10);
   map_g_ROC.begin()->second->Draw("AP");
 
-  for(it_Config =  map_ConfigToEffAndBkgd.begin();
-      it_Config != map_ConfigToEffAndBkgd.end(); ++it_Config){
-    leg_ROC->AddEntry(map_g_ROC[it_Config->first], Form(legEntryFormat.c_str(), it_Config->first.first, it_Config->second.first, it_Config->second.second), "P");
-    map_g_ROC[it_Config->first]->Draw("P");
+  for(auto const& it_Config : map_ConfigToEffAndBkgd){
+    leg_ROC->AddEntry(map_g_ROC[it_Config.first], Form(legEntryFormat.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "P");
+    map_g_ROC[it_Config.first]->Draw("P");
   }
-  g_Alex_ROC->Draw("P");
-  leg_ROC->AddEntry(g_Alex_ROC, Form("Alex TW: 10000 ms, Eff: %.2f & Bkgd rate: %.2f Hz",
-                                     map_ConfigToEffAndBkgd2.begin()->second.first,
-                                     map_ConfigToEffAndBkgd2.begin()->second.second));
   TLine *l_perMonth_2 = new TLine(minX, 4.13e-7, maxX, 4.13e-7);
   l_perMonth_2->SetLineColor(1);
   l_perMonth_2->SetLineWidth(3);
