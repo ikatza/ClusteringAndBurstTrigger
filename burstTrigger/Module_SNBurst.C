@@ -14,8 +14,8 @@ using namespace std;
 TFile *f_Output;
 TFile *f_Theory;
 int threshold = 10;
-const bool reproduceAlexResult = true; 
-const bool faster = false; 
+const bool reproduceAlexResult = false; 
+const bool faster = true; 
 
 std::map<double,int> makeDistanceToEventsNeighbourhoodMap(TH1D* const &h_SNProbabilityVDistance,
                                                           TF1* const &f_EventsVSNDistance_10kt){
@@ -190,7 +190,7 @@ int main()
 
   //DEFINE PARAMETERS.
   int burstMin(1), burstMax(30e4);
-  int timeWindow(10000);
+  int timeWindow(1000);
 
   double cut_PerMonth = 4.13e-7; 
   
@@ -228,9 +228,10 @@ int main()
     int    Config = it_ConfigToEffAndBkgd.first;
     double eff    = it_ConfigToEffAndBkgd.second.first;
     double bkgd   = it_ConfigToEffAndBkgd.second.second;
-
+    if (Config==10) { timeWindow=10000; }
+    else            { timeWindow=1000;  }
     //ASSUME THE NUMBER OF CLUSTERS IN A GIVEN TIME WINDOW IS GAUSSIAN ABOUT THE GIVEN BACKGROUND RATE WITH AN RMS OF SQRT(MEAN).
-    double mean = bkgd*timeWindow/1000.;
+    double mean = bkgd*timeWindow/10000.;
     double rms  = std::sqrt(mean);
     double fracInTW = h_TimeProfile->Integral(0,h_TimeProfile->FindBin(timeWindow));
     if (reproduceAlexResult) {

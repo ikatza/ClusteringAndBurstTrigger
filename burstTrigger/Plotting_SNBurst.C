@@ -118,23 +118,29 @@ int main()
   TCanvas *c_Global = new TCanvas();
   c_Global->Print("Results.pdf[");
   std::string legHeader = "Individual Marley Eff & 10kt Bkgd Rate";
-  std::string legEntryFormat = "Config: %i - Eff: %.2f & Bkgd rate: %.2f Hz";
+  std::string legEntryFormatWire = "Wire Clusters - Eff: %.2f & Bkgd rate: %.2f Hz 10s timing windown";
+  std::string legEntryFormatOpti = "Optical Custers (nHit>= %i): - Eff: %.2f & Bkgd rate: %.2f Hz 1s timing windown";
   
   THStack *stk_FakeRateVNClusters = new THStack("stk_FakeRateVNClusters", "Number of Clusters in Time Window Required to Trigger vs. Trigger Rate");
   TLegend *leg_FakeRateVNClusters = new TLegend(0.05, 0.05, 0.95, 0.95);
-  //leg_FakeRateVNClusters->SetTextSize(0.023);
   leg_FakeRateVNClusters->SetHeader(legHeader.c_str());
 
   for(auto const& it_Config : map_ConfigToEffAndBkgd){
     stk_FakeRateVNClusters->Add(map_h_FakeRateVNClusters     [it_Config.first]);
     stk_FakeRateVNClusters->Add(map_h_FakeRateVNClustersLow  [it_Config.first]);
-    leg_FakeRateVNClusters->AddEntry(map_h_FakeRateVNClusters[it_Config.first],
-                                     Form(legEntryFormat.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "L");
+    if(it_Config.first==0) {
+      leg_FakeRateVNClusters->AddEntry(map_h_FakeRateVNClusters[it_Config.first],
+                                       Form(legEntryFormatWire.c_str(), it_Config.second.first, it_Config.second.second), "L");
+    } else {
+      leg_FakeRateVNClusters->AddEntry(map_h_FakeRateVNClusters[it_Config.first],
+                                       Form(legEntryFormatOpti.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "L");
+    }
   }
   leg_FakeRateVNClusters->Draw();
   c_Global->Print("Results.pdf");
 
   c_Global->SetLogy();
+  c_Global->SetLogx();
   stk_FakeRateVNClusters->SetMinimum(1e-9);
   stk_FakeRateVNClusters->Draw("NOSTACK C");
   
@@ -163,14 +169,10 @@ int main()
   gPad->RedrawAxis(); 
   c_Global->Print("Results.pdf");
 
+  c_Global->SetLogx(false);
   THStack *stk_EfficiencyVEvents = new THStack("stk_EfficiencyVEvents", "Efficiency vs. Number of Events in SN Burst, Fake Trigger Rate: 1/Month");
-  TLegend *leg_EfficiencyVEvents = new TLegend(0.53, 0.65, 0.85, 0.85);
-  leg_EfficiencyVEvents->SetTextSize(0.023);
-  
-  leg_EfficiencyVEvents->SetHeader(legHeader.c_str());
   for(auto const& it_Config : map_ConfigToEffAndBkgd){
     stk_EfficiencyVEvents->Add(map_h_EfficiencyVEvents     [it_Config.first]);
-    leg_EfficiencyVEvents->AddEntry(map_h_EfficiencyVEvents[it_Config.first], Form(legEntryFormat.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "L");
   }
   c_Global->Clear();
   c_Global->SetLogy(false);
@@ -180,18 +182,11 @@ int main()
   stk_EfficiencyVEvents->GetXaxis()->SetTitle("Number of Events in SN Burst");
   stk_EfficiencyVEvents->GetYaxis()->SetTitle("Efficiency");
   gPad->RedrawAxis();
-  //leg_EfficiencyVEvents->Draw();
   c_Global->Print("Results.pdf");
 
   THStack *stk_EfficiencyVDistance = new THStack("stk_EfficiencyVDistance", "Efficiency vs. Distance to SN, Fake Trigger Rate: 1/Month");
-  TLegend *leg_EfficiencyVDistance = new TLegend(0.15, 0.15, 0.48, 0.35);
-  leg_EfficiencyVDistance->SetTextSize(0.023);
-
-  leg_EfficiencyVDistance->SetHeader(legHeader.c_str());
   for(auto const& it_Config : map_ConfigToEffAndBkgd){
     stk_EfficiencyVDistance->Add(map_h_EfficiencyVDistance[it_Config.first]);
-    leg_EfficiencyVDistance->AddEntry(map_h_EfficiencyVDistance[it_Config.first], 
-                                      Form(legEntryFormat.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "L");
   }
   c_Global->Clear();
   c_Global->Draw();
@@ -205,18 +200,12 @@ int main()
 
   gStyle->SetOptStat(0);
   THStack *stk_EffGalaxy = new THStack("stk_EffGalaxy", "Galactic Neighbourhood Coverage, Fake Trigger Rate 1/Month");
-  TLegend *leg_EffGalaxy = new TLegend(0.15, 0.15, 0.48, 0.35);
-  leg_EffGalaxy->SetTextSize(0.023);
 
-  leg_EffGalaxy->SetHeader(legHeader.c_str());
   stk_EffGalaxy->Add(h_SNProbabilityVDistance);
 
   for(auto const& it_Config : map_ConfigToEffAndBkgd){
     stk_EffGalaxy->Add(map_h_EffGalaxy[it_Config.first]);
-    leg_EffGalaxy->AddEntry(map_h_EffGalaxy[it_Config.first],
-                            Form(legEntryFormat.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "L");
   }
-  leg_EffGalaxy->AddEntry(h_SNProbabilityVDistance, "SN Probability", "L");
   c_Global->Clear();
   c_Global->Draw();
   c_Global->SetLogx(false);
@@ -226,13 +215,9 @@ int main()
   stk_EffGalaxy->GetYaxis()->SetTitle("Efficiency x SN Probability");
   stk_EffGalaxy->Draw("NOSTACK");
   gPad->RedrawAxis();
-  //leg_EffGalaxy->Draw();
   c_Global->Print("Results.pdf");
 
 
-  TLegend *leg_ROC    = new TLegend(0.15, 0.68, 0.48, 0.88);
-  leg_ROC->SetTextSize(0.023);
-  leg_ROC->SetHeader(legHeader.c_str());
   c_Global->Clear();
   c_Global->Draw();
   double minX=0.6, maxX=1;
@@ -248,7 +233,6 @@ int main()
   map_g_ROC.begin()->second->Draw("AP");
 
   for(auto const& it_Config : map_ConfigToEffAndBkgd){
-    leg_ROC->AddEntry(map_g_ROC[it_Config.first], Form(legEntryFormat.c_str(), it_Config.first, it_Config.second.first, it_Config.second.second), "P");
     map_g_ROC[it_Config.first]->Draw("P");
   }
   TLine *l_perMonth_2 = new TLine(minX, 4.13e-7, maxX, 4.13e-7);
@@ -256,7 +240,6 @@ int main()
   l_perMonth_2->SetLineWidth(3);
   TText *t_perMonth_2 = new TText(minX+0.015, 8e-7, "1/Month");
   gPad->RedrawAxis();
-  //leg_ROC->Draw();
   l_perMonth_2->Draw();
   t_perMonth_2->Draw();
   c_Global->Print("Results.pdf");
