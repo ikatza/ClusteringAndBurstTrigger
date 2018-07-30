@@ -41,15 +41,15 @@ Double_t PoissonIntegral(Double_t x, Double_t mean){
 
 
 void makeFakeRateVNClusters(double const &mean, double const &rms, double const &bkgd,
-                            int const &config,
+                            int const &config,double const &timeW,
                             std::map<double,double> &map_FakeRateToNClusters){
   
   int    nBins  = 2000; 
   double rmsMax = 10*rms;
-  TH1D  *h_FakeRateVNClusters    = new TH1D(Form("h_FakeRateVNClusters_Config%i",config),
-                                            Form("h_FakeRateVNClusters_Config%i",config), nBins,  mean, mean+rmsMax);
-  TH1D  *h_FakeRateVNClustersLow = new TH1D(Form("h_FakeRateVNClustersLow_Config%i",config),
-                                            Form("h_FakeRateVNClustersLow_Config%i",config), nBins, 0, mean);
+  TH1D  *h_FakeRateVNClusters    = new TH1D(Form("h_FakeRateVNClusters_Config%i_TW%.3f",config, timeW),
+                                            Form("h_FakeRateVNClusters_Config%i_TW%.3f",config, timeW), nBins,  mean, mean+rmsMax);
+  TH1D  *h_FakeRateVNClustersLow = new TH1D(Form("h_FakeRateVNClustersLow_Config%i_TW%.3f",config, timeW),
+                                            Form("h_FakeRateVNClustersLow_Config%i_TW%.3f",config, timeW), nBins, 0, mean);
   
   for(int i = 1; i < h_FakeRateVNClusters->GetSize()-1; i++){
     double nClusters = h_FakeRateVNClusters->GetBinCenter(i);
@@ -190,7 +190,6 @@ int main()
 
   //DEFINE PARAMETERS.
   int burstMin(1), burstMax(30e4);
-  int timeWindow(1000);
 
   double cut_PerMonth = 4.13e-7; 
   
@@ -214,26 +213,26 @@ int main()
   std::map<double,int> map_DistanceToEvents_Neighbourhood = makeDistanceToEventsNeighbourhoodMap(h_SNProbabilityVDistance, 
                                                                                                  f_EventsVSNDistance_10kt);
 
-  std::map<int,std::pair<double,double>> map_ConfigToEffAndBkgd;
+  std::map<std::pair<int,double>,std::pair<double,double>> map_ConfigToEffAndBkgd;
   int Config;
-  double Eff, Bkgd;
+  double TimeWindow, Eff, Bkgd;
 
-  while(inFile >> Config >> Eff >> Bkgd){
-    map_ConfigToEffAndBkgd[Config] = {Eff,Bkgd};
+  while(inFile >> Config >> TimeWindow >> Eff >> Bkgd){
+    map_ConfigToEffAndBkgd[std::make_pair(Config,TimeWindow)] = {Eff,Bkgd};
   }
+  
   //LOOP AROUND THE CLUSTERING CONFIGURATIONS.    
   std::map<int,std::pair<double,double>>::iterator it_ConfigToEffAndBkgd;
   for(auto const& it_ConfigToEffAndBkgd : map_ConfigToEffAndBkgd){
     
-    int    Config = it_ConfigToEffAndBkgd.first;
+    int    Config = it_ConfigToEffAndBkgd.first.first;
+    double TimeW  = it_ConfigToEffAndBkgd.first.second;
     double eff    = it_ConfigToEffAndBkgd.second.first;
     double bkgd   = it_ConfigToEffAndBkgd.second.second;
-    if (Config==10) { timeWindow=10000; }
-    else            { timeWindow=1000;  }
     //ASSUME THE NUMBER OF CLUSTERS IN A GIVEN TIME WINDOW IS GAUSSIAN ABOUT THE GIVEN BACKGROUND RATE WITH AN RMS OF SQRT(MEAN).
-    double mean = bkgd*timeWindow/10000.;
+    double mean = bkgd*TimeW;
     double rms  = std::sqrt(mean);
-    double fracInTW = h_TimeProfile->Integral(0,h_TimeProfile->FindBin(timeWindow));
+    double fracInTW = h_TimeProfile->Integral(0,h_TimeProfile->FindBin(TimeW*1000));
     if (reproduceAlexResult) {
       threshold = 0;
       fracInTW = 1;
@@ -245,7 +244,7 @@ int main()
     }
     std::cout << " sig/mean " << eff*fracInTW/mean << std::endl;
     std::map<double,double> map_FakeRateToNClusters;
-    makeFakeRateVNClusters(mean, rms, bkgd, Config, map_FakeRateToNClusters);
+    makeFakeRateVNClusters(mean, rms, bkgd, Config,TimeW, map_FakeRateToNClusters);
 
     //PULL OUT THE PER MONTH CLUSTER CUT FOR THIS CONFIGURATION.
     double cut_KeyNClustersForOnePerMonth = 0.;
@@ -262,15 +261,17 @@ int main()
     }
     if(cut_KeyNClustersForOnePerMonth == -1){
       std::cout << "KeyNClustersForOnePerMonth is " << cut_KeyNClustersForOnePerMonth << std::endl;
+    } else {
+      outFile   << Config << " "
+                << TimeW << " "
+                << eff << " "
+                << bkgd << " "
+                << cut_NClustersForOnePerMonth << std::endl;
     }
-    std::cout << "CONFIG: " << Config
+    std::cout << "CONFIG: " << Config << " TIMEWINDOW: " << TimeW
               << ", EFF: " << eff
               << ", BKGD: " << Bkgd
               << ", PERMONTH CUT:  " << cut_NClustersForOnePerMonth << std::endl;
-    outFile   << Config << " "
-              << eff << " "
-              << bkgd << " "
-              << cut_NClustersForOnePerMonth << std::endl;
 
     //LOOP OVER THE DIFFERENT FAKE RATES AND CUTS TO GET FAKE RATE
     //AGAINST GALACTIC COVERAGE.
@@ -279,15 +280,16 @@ int main()
     std::map<double,int>    map_ClustersToMaxEffEvent;
     int count_Loop = 0;
     // THE fraction of events that are expected to fall in the time window
-    std::cout << "BIN: " << h_TimeProfile->FindBin((double)timeWindow) << std::endl;
+    std::cout << "BIN: " << h_TimeProfile->FindBin((double)TimeW) << std::endl;
+    std::cout << "map_FakeRateToNClusters.size() " << map_FakeRateToNClusters.size() << std::endl;
     for(auto const& it_FakeRateToNClusters : map_FakeRateToNClusters){
-      if(count_Loop % 50 == 0)
-        std::cout << "WORKING ON CONFIG: " << Config
+      if(count_Loop % 500 == 0)
+        std::cout << "WORKING ON CONFIG: " << Config << " TIMEWINDOW: " << TimeW
                   << ", ITERATION: " << count_Loop << std::endl;
               
       TH1D *h_NeighbourhoodEffiency = (TH1D*)h_SNProbabilityVDistance->Clone();
       //h_NeighbourhoodEffiency->Reset();
-      h_NeighbourhoodEffiency->SetName(Form("h_NeighbourhoodEffiency_Config%i",Config));
+      h_NeighbourhoodEffiency->SetName(Form("h_NeighbourhoodEffiency_Config%i_TW%0.3f",Config,TimeW));
       h_NeighbourhoodEffiency->SetDirectory(0);
       // FOR EACH BURST SIZE
       if(!faster ||
@@ -306,8 +308,8 @@ int main()
         std::cout << "Iteration " << count_Loop << std::endl;
         std::cout << "it_FakeRateToNClusters->first  " << it_FakeRateToNClusters.first  << " cut_KeyNClustersForOnePerMonth " << cut_KeyNClustersForOnePerMonth << std::endl;
         std::cout << "it_FakeRateToNClusters->second " << it_FakeRateToNClusters.second << " cut_NClustersForOnePerMonth    " << cut_NClustersForOnePerMonth    << std::endl;
-        TH1D *h_EfficiencyVEvents   = new TH1D(Form("h_EfficiencyVEvents_Config%i",Config),
-                                               Form("h_EfficiencyVEvents_Config%i",Config),
+        TH1D *h_EfficiencyVEvents   = new TH1D(Form("h_EfficiencyVEvents_Config%i_TW%.3f",Config,TimeW),
+                                               Form("h_EfficiencyVEvents_Config%i_TW%.3f",Config,TimeW),
                                                burstMax-burstMin+1, burstMin, burstMax);
         for(int i = burstMin; i <= burstMax; i++){
           int bin = h_EfficiencyVEvents->FindBin(i);
@@ -316,8 +318,8 @@ int main()
         f_Output->cd();
         h_EfficiencyVEvents->Write();
               
-        TH1D *h_EfficiencyVDistance = new TH1D(Form("h_EfficiencyVDistance_Config%i",Config),
-                                               Form("h_EfficiencyVDistance_Config%i",Config),
+        TH1D *h_EfficiencyVDistance = new TH1D(Form("h_EfficiencyVDistance_Config%i_TW%.3f",Config,TimeW),
+                                               Form("h_EfficiencyVDistance_Config%i_TW%.3f",Config,TimeW),
                                                burstMax-burstMin+1, min_Distance, max_Distance); 
         for(int i = 1; i < h_EfficiencyVDistance->GetSize()-1; i++){
           double distance   = h_EfficiencyVDistance->GetBinCenter(i);
@@ -350,7 +352,7 @@ int main()
       
     //EXTRACT THE INFORMATION WE HAVE PICKED UP AND MAKE THE ROC PLOT.
     TGraph *g_ROC = new TGraph(map_FakeRateToNClusters.size());
-    g_ROC->SetName(Form("g_ROC_Config%i",Config));
+    g_ROC->SetName(Form("g_ROC_Config%i_TW%0.3f",Config,TimeW));
     count_Loop = 0;
 
     for(auto const& it_FakeRateToNClusters : map_FakeRateToNClusters){
