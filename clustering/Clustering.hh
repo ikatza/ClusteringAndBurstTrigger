@@ -52,6 +52,7 @@ public:
     t_Output_TimingInfo         (NULL),
     h_ENu_MC     (NULL),
     h_MarlTime_MC(NULL),
+    h_TimeElapsed(NULL),
     fmap_APA_Channel(),
     im()    {
       for(size_t i = 0; i < fvec_g_config.size(); i++){
@@ -66,6 +67,10 @@ public:
       SetupConfigurations_MinChanWidth    ();
       SetupConfigurations_TimeWindowSize  ();
       SetupConfigurations_TotalADC        ();
+      SetupConfigurations_TimeWindowOpt   ();
+      SetupConfigurations_BucketSize      ();
+      SetupConfigurations_PositionOpt     ();
+
       fmap_APA_Channel[-1] = std::numeric_limits<int>::max();
       fmap_APA_Channel[0]  = 0;
       fmap_APA_Channel[1]  = 3000;
@@ -87,7 +92,7 @@ public:
                                   fvec_cut_MinChanWidth  .size(),
                                   fvec_cut_TimeWindowSize.size(),
                                   fvec_cut_TotalADC      .size()};
-    
+
       fNConfig = (int)(*std::min_element(sizes.begin(), sizes.end()));
       // std::cout << "There are " << fNConfig << " configs"<< std::endl;
       fNCuts = 6;
@@ -150,7 +155,13 @@ public:
     { fvec_cut_TimeWindowSize = vec_cut_TimeWindowSize; };
   void SetupConfigurations_TotalADC        (const std::vector<float> vec_cut_TotalADC         = {350,400,450,400,400,0,0})
     { fvec_cut_TotalADC =vec_cut_TotalADC; };
- 
+  void SetupConfigurations_TimeWindowOpt  (const std::vector<float> vec_cut_TimeWindowOpt     = {0.6,0.8,1.0,2.0,0.8,0.8})
+    { fvec_cut_TimeWindowOpt =vec_cut_TimeWindowOpt; };
+  void SetupConfigurations_PositionOpt     (const std::vector<float> vec_cut_PositionOpt      = {300,300,300,300,300,300})
+    { fvec_cut_PositionOpt =vec_cut_PositionOpt; };
+  void SetupConfigurations_BucketSize      (const std::vector<float> vec_cut_BucketSize       = {0.1,0.1,0.1,0.1,0.2,0.3})
+    { fvec_cut_BucketSize =vec_cut_BucketSize; };
+
   int GetNConfig() const { return fNConfig; };
   std::vector<float> GetCutAdjChanTolerance() const { return fvec_cut_AdjChanTolerance; };
   std::vector<float> GetCutHitsInWindow    () const { return fvec_cut_HitsInWindow    ; };
@@ -178,7 +189,7 @@ public:
       if(t_Output_ClusteredOpticalHit) delete t_Output_ClusteredOpticalHit;
       if(t_Output_TrueInfo           ) delete t_Output_TrueInfo           ;
       if(t_Output_TimingInfo         ) delete t_Output_TimingInfo         ;
-      
+
       for(size_t i = 0; i < fvec_g_config.size(); i++){
         if(fvec_g_config[i]) delete fvec_g_config[i];
         fvec_g_config[i] = NULL;
@@ -186,14 +197,14 @@ public:
       fvec_g_config.clear();
       if(fTrigger)    delete fTrigger;
       if(fClustSelec) delete fClustSelec;
-      if(fClustEng)   delete fClustEng;  
+      if(fClustEng)   delete fClustEng;
       fTrigger = NULL;
       fClustSelec = NULL;
       fClustEng = NULL;
 
       fvec_ClusterCount.clear();
       fvec_OptClusterCount.clear();
-      
+
       fvec_cut_MinHitADC       .clear();
       fvec_cut_AdjChanTolerance.clear();
       fvec_cut_HitsInWindow    .clear();
@@ -210,8 +221,10 @@ public:
       
       if(h_ENu_MC)      delete h_ENu_MC;
       if(h_MarlTime_MC) delete h_MarlTime_MC;
+      if(h_TimeElapsed) delete h_TimeElapsed;
       h_ENu_MC = NULL;
       h_MarlTime_MC = NULL;
+      h_TimeElapsed = NULL;
 
       if(f_Output) f_Output->Close();
       f_Output = NULL;
@@ -219,7 +232,7 @@ public:
       if (fEReco) delete fEReco;
       fEReco = NULL;
     };
-  
+
 private:
   std::string fInputFileName ;
   std::string fInputTreeName ;
@@ -241,6 +254,9 @@ private:
   std::vector<float> fvec_cut_TimeWindowSize  ;
   std::vector<float> fvec_cut_TotalADC        ;
   std::vector<float> fvec_cut_MinHitADC       ;
+  std::vector<float> fvec_cut_TimeWindowOpt ;
+  std::vector<float> fvec_cut_PositionOpt ;
+  std::vector<float> fvec_cut_BucketSize ;
 
   std::vector<TGraph*> fvec_g_config;
   int fNConfig;
@@ -252,7 +268,7 @@ private:
 
   unsigned int fNCuts;
   unsigned int fNEvent;
-   
+
   TTree* t_Output_ClusteredWireHit;
   TTree* t_Output_ClusteredOpticalHit;
   TTree* t_Output_TrueInfo;
@@ -260,7 +276,8 @@ private:
 
   TH1D* h_ENu_MC     ;
   TH1D* h_MarlTime_MC;
-  
+  TH1D* h_TimeElapsed;
+
 //OUTPUT VARIABLES
   int    out_Event         ;
   int    out_MarleyIndex   ;
@@ -318,9 +335,9 @@ private:
   std::vector<double> out_HitSPE;
   std::vector<double> out_HitRMS;
   std::vector<double> out_HitWidth;
-  std::vector<double> out_TrPosX; 
-  std::vector<double> out_TrPosY; 
-  std::vector<double> out_TrPosZ; 
+  std::vector<double> out_TrPosX;
+  std::vector<double> out_TrPosY;
+  std::vector<double> out_TrPosZ;
 
   std::vector<int>    out_PDSHit_GenType  ;
   std::vector<double> out_PDSHit_X        ;
@@ -330,7 +347,7 @@ private:
   std::vector<double> out_PDSHit_Width    ;
   std::vector<double> out_PDSHit_PE       ;
   std::vector<double> out_PDSHit_OpChannel;
- 
+
   std::vector<double> out_MarlTime;
   std::vector<double> out_ENu;
   std::vector<double> out_ENu_Lep;
@@ -347,5 +364,3 @@ private:
 
 };
 #endif
-
- 
