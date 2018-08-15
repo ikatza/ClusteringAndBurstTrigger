@@ -225,6 +225,8 @@ int main(int argc, char** argv){
   gPad->SetLogy();
   h_npe_sign_opti->SetBinContent(h_npe_sign_opti->GetXaxis()->GetNbins(),
                                  h_npe_sign_opti->GetBinContent(h_npe_sign_opti->GetXaxis()->GetNbins()+1));
+  h_npe_back_opti->SetBinContent(h_npe_back_opti->GetXaxis()->GetNbins(),
+                                 h_npe_back_opti->GetBinContent(h_npe_back_opti->GetXaxis()->GetNbins()+1));
   h_npe_sign_opti->Draw("");
   h_npe_back_opti->Draw("SAME");
   c.Print("opt_clustering.pdf");
