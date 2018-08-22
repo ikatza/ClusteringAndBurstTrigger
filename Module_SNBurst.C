@@ -14,8 +14,8 @@ using namespace std;
 TFile *f_Output;
 TFile *f_Theory;
 int threshold = 10;
-const bool reproduceAlexResult = false; 
-const bool faster = true; 
+const bool reproduceAlexResult = false;
+const bool faster = true;
 
 std::map<double,int> makeDistanceToEventsNeighbourhoodMap(TH1D* const &h_SNProbabilityVDistance,
                                                           TF1* const &f_EventsVSNDistance_10kt){
@@ -43,14 +43,14 @@ Double_t PoissonIntegral(Double_t x, Double_t mean){
 void makeFakeRateVNClusters(double const &mean, double const &rms, double const &bkgd,
                             int const &config,double const &timeW,
                             std::map<double,double> &map_FakeRateToNClusters){
-  
-  int    nBins  = 2000; 
+
+  int    nBins  = 2000;
   double rmsMax = 10*rms;
   TH1D  *h_FakeRateVNClusters    = new TH1D(Form("h_FakeRateVNClusters_Config%i_TW%.3f",config, timeW),
                                             Form("h_FakeRateVNClusters_Config%i_TW%.3f",config, timeW), nBins,  mean, mean+rmsMax);
   TH1D  *h_FakeRateVNClustersLow = new TH1D(Form("h_FakeRateVNClustersLow_Config%i_TW%.3f",config, timeW),
                                             Form("h_FakeRateVNClustersLow_Config%i_TW%.3f",config, timeW), nBins, 0, mean);
-  
+
   for(int i = 1; i < h_FakeRateVNClusters->GetSize()-1; i++){
     double nClusters = h_FakeRateVNClusters->GetBinCenter(i);
     if(nClusters<0){
@@ -60,13 +60,13 @@ void makeFakeRateVNClusters(double const &mean, double const &rms, double const 
       double nRMS      = (nClusters-mean)/rms;
       double fraction  = (1-TMath::Erf(nRMS/std::sqrt(2.)))/2.;
       double fakeRate  = fraction*bkgd;
-      
+
       h_FakeRateVNClusters->SetBinContent(i, fakeRate);
       map_FakeRateToNClusters[fakeRate] = nClusters;
     }else{
       double integral = 1-PoissonIntegral(nClusters,mean);
       double fakeRate  = integral*bkgd;
-        
+
       h_FakeRateVNClusters->SetBinContent(i, fakeRate);
       map_FakeRateToNClusters[fakeRate] = nClusters;
     }
@@ -86,7 +86,7 @@ void makeFakeRateVNClusters(double const &mean, double const &rms, double const 
     }else{
       double integral = 1-PoissonIntegral(nClusters,mean);
       double fakeRate  = integral*bkgd;
-      
+
       h_FakeRateVNClustersLow->SetBinContent(i, fakeRate);
     }
   }
@@ -108,7 +108,7 @@ std::map<std::pair<double,int>,double>  makeEfficiencyVEvents(double const &eff,
                                                               std::map<double,int> &map_ClustersToMaxEffEvent){
   std::map<std::pair<double,int>,double> map_NClustersAndEventsToBurstEff;
   bool isOne = false;
-  double f = fracInTW;  
+  double f = fracInTW;
 
   for(int i = burstMin; i <= burstMax; i++){
     double integral      = 0;
@@ -124,7 +124,7 @@ std::map<std::pair<double,int>,double>  makeEfficiencyVEvents(double const &eff,
 
       if(integral>=0 && integral<=1)
       {
-        map_NClustersAndEventsToBurstEff[{nClusters,i}] = integral; 
+        map_NClustersAndEventsToBurstEff[{nClusters,i}] = integral;
         if(integral==1)
         {
           map_ClustersToMaxEffEvent[nClusters] = i;
@@ -133,7 +133,7 @@ std::map<std::pair<double,int>,double>  makeEfficiencyVEvents(double const &eff,
       }
       else if(integral<0)
       {
-        map_NClustersAndEventsToBurstEff[{nClusters,i}] = 0; 
+        map_NClustersAndEventsToBurstEff[{nClusters,i}] = 0;
       }
     }
 
@@ -147,9 +147,9 @@ std::map<std::pair<double,int>,double>  makeEfficiencyVEvents(double const &eff,
 }
 
 
-void makeNeighbourhoodEfficiency(TH1D* const &h_SNProbabilityVDistance, std::map<double,int> &map_DistanceToEvents_Neighbourhood, 
+void makeNeighbourhoodEfficiency(TH1D* const &h_SNProbabilityVDistance, std::map<double,int> &map_DistanceToEvents_Neighbourhood,
                                  std::map<std::pair<double,int>,double> &map_NClustersAndEventsToBurstEff, double const &nClusters,
-                                 TH1D* &h_NeighbourhoodEffiency, std::map<double,int> &map_ClustersToMaxEffEvent, 
+                                 TH1D* &h_NeighbourhoodEffiency, std::map<double,int> &map_ClustersToMaxEffEvent,
                                  std::map<double,double> &map_ClustersToCoverage)
 {
   for(int i = 1; i < h_SNProbabilityVDistance->GetSize()-1; i++)
@@ -160,7 +160,7 @@ void makeNeighbourhoodEfficiency(TH1D* const &h_SNProbabilityVDistance, std::map
     double probXEff, burstEff;
     if(nEvents>=map_ClustersToMaxEffEvent[nClusters])
     {
-      probXEff = prob*1; 
+      probXEff = prob*1;
     }
     else
     {
@@ -191,26 +191,26 @@ int main()
   //DEFINE PARAMETERS.
   int burstMin(1), burstMax(30e4);
 
-  double cut_PerMonth = 4.13e-7; 
-  
+  double cut_PerMonth = 4.13e-7;
+
   //GRAB THEORY PLOTS.
   f_Theory = new TFile("SNTheoryDistributions.root","READ");
   f_Output = new TFile("Analyse_SNBurst_"+s_Filename+".root", "RECREATE");
   TFile *f_TimeProfile = new TFile("TimeProfile.root", "READ");
   TH1D* h_TimeProfile = (TH1D*)f_TimeProfile->Get("h_MarlTime");
- 
+
   TH1D *h_SNProbabilityVDistance = (TH1D*)f_Theory->Get("h_SNProbabilityVDistance_LMC");
   h_SNProbabilityVDistance->SetDirectory(0);
 
   TF1  *f_EventsVSNDistance_10kt = (TF1*)f_Theory->Get("f_EventsVSNDistance_10kt_100kpc");
   double gradient  = f_EventsVSNDistance_10kt->GetParameter(0);
-  double intercept = f_EventsVSNDistance_10kt->GetParameter(1); 
-  TF1 *f_Inverse   = new TF1("f_Inverse", "TMath::Power(x/(TMath::Power(10,[0])),1/[1])", 1,40e4);  
+  double intercept = f_EventsVSNDistance_10kt->GetParameter(1);
+  TF1 *f_Inverse   = new TF1("f_Inverse", "TMath::Power(x/(TMath::Power(10,[0])),1/[1])", 1,40e4);
   f_Inverse->SetParameter(0, intercept);
   f_Inverse->SetParameter(1, gradient);
   double min_Distance = f_Inverse->Eval(burstMax);
   double max_Distance = f_Inverse->Eval(burstMin);
-  std::map<double,int> map_DistanceToEvents_Neighbourhood = makeDistanceToEventsNeighbourhoodMap(h_SNProbabilityVDistance, 
+  std::map<double,int> map_DistanceToEvents_Neighbourhood = makeDistanceToEventsNeighbourhoodMap(h_SNProbabilityVDistance,
                                                                                                  f_EventsVSNDistance_10kt);
 
   std::map<std::pair<int,double>,std::pair<double,double>> map_ConfigToEffAndBkgd;
@@ -220,11 +220,11 @@ int main()
   while(inFile >> Config >> TimeWindow >> Eff >> Bkgd){
     map_ConfigToEffAndBkgd[std::make_pair(Config,TimeWindow)] = {Eff,Bkgd};
   }
-  
-  //LOOP AROUND THE CLUSTERING CONFIGURATIONS.    
+
+  //LOOP AROUND THE CLUSTERING CONFIGURATIONS.
   std::map<int,std::pair<double,double>>::iterator it_ConfigToEffAndBkgd;
   for(auto const& it_ConfigToEffAndBkgd : map_ConfigToEffAndBkgd){
-    
+
     int    Config = it_ConfigToEffAndBkgd.first.first;
     double TimeW  = it_ConfigToEffAndBkgd.first.second;
     double eff    = it_ConfigToEffAndBkgd.second.first;
@@ -286,7 +286,7 @@ int main()
       if(count_Loop % 500 == 0)
         std::cout << "WORKING ON CONFIG: " << Config << " TIMEWINDOW: " << TimeW
                   << ", ITERATION: " << count_Loop << std::endl;
-              
+
       TH1D *h_NeighbourhoodEffiency = (TH1D*)h_SNProbabilityVDistance->Clone();
       //h_NeighbourhoodEffiency->Reset();
       h_NeighbourhoodEffiency->SetName(Form("h_NeighbourhoodEffiency_Config%i_TW%0.3f",Config,TimeW));
@@ -298,10 +298,10 @@ int main()
                                                                  burstMin, burstMax,
                                                                  map_ClustersToMaxEffEvent);
         makeNeighbourhoodEfficiency(h_SNProbabilityVDistance, map_DistanceToEvents_Neighbourhood,
-                                    map_NClustersAndEventsToBurstEff, it_FakeRateToNClusters.second, 
+                                    map_NClustersAndEventsToBurstEff, it_FakeRateToNClusters.second,
                                     h_NeighbourhoodEffiency, map_ClustersToMaxEffEvent, map_ClustersToCoverage);
       }
-    
+
       // MAKE THE 1 PER MONTH HISTOGRAMS.
       if(it_FakeRateToNClusters.first  == cut_KeyNClustersForOnePerMonth &&
          it_FakeRateToNClusters.second == cut_NClustersForOnePerMonth){
@@ -317,16 +317,16 @@ int main()
         }
         f_Output->cd();
         h_EfficiencyVEvents->Write();
-              
+
         TH1D *h_EfficiencyVDistance = new TH1D(Form("h_EfficiencyVDistance_Config%i_TW%.3f",Config,TimeW),
                                                Form("h_EfficiencyVDistance_Config%i_TW%.3f",Config,TimeW),
-                                               burstMax-burstMin+1, min_Distance, max_Distance); 
+                                               burstMax-burstMin+1, min_Distance, max_Distance);
         for(int i = 1; i < h_EfficiencyVDistance->GetSize()-1; i++){
           double distance   = h_EfficiencyVDistance->GetBinCenter(i);
           double nEvents    = f_EventsVSNDistance_10kt->Eval(distance);
           int    nEventsBin = h_EfficiencyVEvents->FindBin(nEvents);
           double burstEff   = h_EfficiencyVEvents->GetBinContent(nEventsBin);
-                
+
           h_EfficiencyVDistance->SetBinContent(i,burstEff);
         }
         f_Output->cd();
@@ -341,15 +341,15 @@ int main()
         }
         h_NeighbourhoodEffiency->Write();
       }
-        
+
       if(h_NeighbourhoodEffiency){
         delete h_NeighbourhoodEffiency;
         h_NeighbourhoodEffiency = NULL;
       }
-            
+
       count_Loop++;
     }
-      
+
     //EXTRACT THE INFORMATION WE HAVE PICKED UP AND MAKE THE ROC PLOT.
     TGraph *g_ROC = new TGraph(map_FakeRateToNClusters.size());
     g_ROC->SetName(Form("g_ROC_Config%i_TW%0.3f",Config,TimeW));
@@ -371,5 +371,3 @@ int main()
   f_Theory->Close();
   return 0;
 }
-
-

@@ -29,7 +29,7 @@ int main()
   int Config;
   double TimeWindow, Eff, Bkgd, dummy;
   std::vector<int> vec_Config;
-  
+
   while(inFile >> Config >> TimeWindow>> Eff >> Bkgd >> dummy){
   std::cout << "Config " << Config << " TimeWindow " << TimeWindow
             << ", Eff " << Eff
@@ -38,13 +38,13 @@ int main()
 
     if(std::find(vec_Config.begin(), vec_Config.end(), Config) == vec_Config.end())
       vec_Config.push_back(Config);
-    
+
     map_ConfigToEffAndBkgd[std::make_pair(Config,TimeWindow)] = {Eff,Bkgd};
   }
-  
+
   int nConfig = (int)vec_Config.size();
   std::cout << "There are " << nConfig << " configs." << std::endl;
-  
+
   gROOT->ForceStyle();
   std::vector<int> vec_Colors = getColors(2);
   TFile *f_SNTheoryDistributions = new TFile("SNTheoryDistributions.root","READ");
@@ -63,7 +63,7 @@ int main()
   std::map<int,std::pair<double,double>>::iterator it_Config;
   int globalIt=0;
   for(auto& it_Config : map_ConfigToEffAndBkgd){
-    
+
     int color = vec_Colors.at(globalIt % vec_Colors.size());
 
     int config     = it_Config.first.first;
@@ -75,10 +75,10 @@ int main()
     TString s_EfficiencyVDistance    = Form("h_EfficiencyVDistance_Config%i_TW%.3f",   config, TimeWindow);
     TString s_EffGalaxy              = Form("h_NeighbourhoodEffiency_Config%i_TW%.3f", config, TimeWindow);
     TString s_ROC                    = Form("g_ROC_Config%i_TW%.3f",                   config, TimeWindow);
-    
-    TH1D *h_FakeRateVNClusters    = (TH1D*)f_Input->Get(s_FakeRateVNClusters); 
+
+    TH1D *h_FakeRateVNClusters    = (TH1D*)f_Input->Get(s_FakeRateVNClusters);
     TH1D *h_FakeRateVNClustersLow = (TH1D*)f_Input->Get(s_FakeRateVNClustersLow);
-    
+
     TH1D *h_EfficiencyVEvents = (TH1D*)f_Input->Get(s_EfficiencyVEvents);
     if(!h_EfficiencyVEvents){
       std::cout << "Erasing config " << config << " as there is no EfficiencyVEvents plot" << std::endl;
@@ -127,14 +127,14 @@ int main()
     map_h_EfficiencyVDistance  [std::make_pair(config,TimeWindow)] = h_EfficiencyVDistance;
     map_h_EffGalaxy            [std::make_pair(config,TimeWindow)] = h_EffGalaxy;
     map_g_ROC                  [std::make_pair(config,TimeWindow)] = g_ROC;
-    globalIt++;    
+    globalIt++;
   }
   TCanvas *c_Global = new TCanvas();
   c_Global->Print("Results.pdf[");
   std::string legHeader = "Individual Marley Eff & 10kt Bkgd Rate";
   std::string legEntryFormatWire = "Wire Clusters - Eff: %.2f & Bkgd rate: %.2f Hz (%i s timing window)";
   std::string legEntryFormatOpti = "Optical Custers (nHit>= %i): - Eff: %.2f & Bkgd rate: %.2f Hz (%i s timing window)";
-  
+
   THStack *stk_FakeRateVNClusters = new THStack("stk_FakeRateVNClusters", "Number of Clusters in Time Window Required to Trigger vs. Trigger Rate");
   TLegend *leg_FakeRateVNClusters = new TLegend(0.05, 0.05, 0.95, 0.95);
   leg_FakeRateVNClusters->SetHeader(legHeader.c_str());
@@ -157,7 +157,7 @@ int main()
   c_Global->SetLogx();
   stk_FakeRateVNClusters->SetMinimum(1e-9);
   stk_FakeRateVNClusters->Draw("NOSTACK C");
-  
+
   stk_FakeRateVNClusters->GetXaxis()->SetTitle("Number of Clusters/Time Window");
   stk_FakeRateVNClusters->GetYaxis()->SetTitle("Trigger Rate, (Hz)");
   stk_FakeRateVNClusters->GetXaxis()->SetLimits(0,map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax());
@@ -180,7 +180,7 @@ int main()
   l_perMonth->Draw();
   l_perWeek ->Draw();
   l_perDay  ->Draw();
-  gPad->RedrawAxis(); 
+  gPad->RedrawAxis();
   c_Global->Print("Results.pdf");
 
   c_Global->SetLogx(false);
@@ -228,7 +228,7 @@ int main()
   stk_EffGalaxy->Draw("NOSTACK");
   stk_EffGalaxy->GetXaxis()->SetTitle("SN Distance, (kpc)");
   stk_EffGalaxy->GetYaxis()->SetTitle("Efficiency x SN Probability");
-  stk_EffGalaxy->Draw("NOSTACK");
+  stk_EffGalaxy->Draw("NOSTACK HIST");
   gPad->RedrawAxis();
   c_Global->Print("Results.pdf");
 
