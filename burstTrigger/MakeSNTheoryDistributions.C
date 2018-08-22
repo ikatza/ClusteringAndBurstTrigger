@@ -112,7 +112,7 @@ TH1D* makeSNProbabilityVDistance()
   TH1D *h_SNProbabilityVDistance = new TH1D("h_SNProbabilityVDistance", "h_SNProbabilityVDistance", 31,-0.5,30.5);
   //WITH THESE EYEBALLED VALUES, THE INTEGRAL IS 0.9943. SO NO NOTICEABLE DIFFERENCE WHEN WE SCALE THE HISTOGRAM SO THAT IT INTEGRATES TO 1.
   std::vector<double> SNProb = {0, 0.0135, 0.026, 0.038, 0.048, 0.0535, 0.056, 0.057, 0.057, 0.0575, 0.0625, 0.0705, 0.0775, 0.0778,
-                                    0.074,0.0605,  0.05, 0.038, 0.0255, 0.018, 0.012, 0.008, 0.0055, 0.0025, 0.002,  0.0015,  0.001, 
+                                    0.074,0.0605,  0.05, 0.038, 0.0255, 0.018, 0.012, 0.008, 0.0055, 0.0025, 0.002,  0.0015,  0.001,
                                     0.0005, 0.0005,   0,    0};
 
   for(unsigned int i = 1; i < h_SNProbabilityVDistance->GetSize()-1; i++)
@@ -142,7 +142,7 @@ TH1D* makeSNProbabilityVDistance_LMC()
   TH1D *h_SNProbabilityVDistance = new TH1D("h_SNProbabilityVDistance_LMC", "h_SNProbabilityVDistance_LMC", 54, -0.5,53.5);
   //WITH THESE EYEBALLED VALUES, THE INTEGRAL IS 0.9943. SO NO NOTICEABLE DIFFERENCE WHEN WE SCALE THE HISTOGRAM SO THAT IT INTEGRATES TO 1.
   std::vector<double> SNProb = {0, 0.0135, 0.026, 0.038, 0.048, 0.0535, 0.056, 0.057, 0.057, 0.0575, 0.0625, 0.0705, 0.0775, 0.0778,
-                                    0.074,0.0605,  0.05, 0.038, 0.0255, 0.018, 0.012, 0.008, 0.0055, 0.0025, 0.002,  0.0015,  0.001, 
+                                    0.074,0.0605,  0.05, 0.038, 0.0255, 0.018, 0.012, 0.008, 0.0055, 0.0025, 0.002,  0.0015,  0.001,
                                     0.0005, 0.0005,   0,    0};
 
   for(unsigned int i = 0; i < SNProb.size(); i++)
@@ -155,7 +155,7 @@ TH1D* makeSNProbabilityVDistance_LMC()
   h_SNProbabilityVDistance->SetBinContent(h_SNProbabilityVDistance->FindBin(50), 0.05);
   h_SNProbabilityVDistance->SetBinContent(h_SNProbabilityVDistance->FindBin(51), 0.05);
   h_SNProbabilityVDistance->SetBinContent(h_SNProbabilityVDistance->FindBin(52), 0.05);
-  std::cout << "THE PROBABILITY OF A SUPERNOVA HAPPENING IN THE GALACTIC NEIGHBOURHOOD IS: " << h_SNProbabilityVDistance->Integral() 
+  std::cout << "THE PROBABILITY OF A SUPERNOVA HAPPENING IN THE GALACTIC NEIGHBOURHOOD IS: " << h_SNProbabilityVDistance->Integral()
             << std::endl;
 
   TCanvas *c_SNProbabilityVDistance = new TCanvas("c_SNProbabilityVDistance_LMC","c_SNProbabilityVDistance_LMC",800,500);
@@ -183,6 +183,6 @@ int main()
   map_EventsVSNDistance.second->Write();
   h_SNProbabilityVDistance->Write();
   h_SNProbabilityVDistance_LMC->Write();
-
+  f_Output->Close();
   return 0;
 }
