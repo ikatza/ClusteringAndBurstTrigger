@@ -191,7 +191,7 @@ int main()
   //DEFINE PARAMETERS.
   int burstMin(1), burstMax(30e4);
 
-  double cut_PerMonth = 4.13e-7;
+  double cut_PerYear = 3.44e-8;
 
   //GRAB THEORY PLOTS.
   f_Theory = new TFile("SNTheoryDistributions.root","READ");
@@ -246,32 +246,32 @@ int main()
     std::map<double,double> map_FakeRateToNClusters;
     makeFakeRateVNClusters(mean, rms, bkgd, Config,TimeW, map_FakeRateToNClusters);
 
-    //PULL OUT THE PER MONTH CLUSTER CUT FOR THIS CONFIGURATION.
-    double cut_KeyNClustersForOnePerMonth = 0.;
-    double cut_NClustersForOnePerMonth    = 0.;
+    //PULL OUT THE PER YEAR CLUSTER CUT FOR THIS CONFIGURATION.
+    double cut_KeyNClustersForOnePerYear = 0.;
+    double cut_NClustersForOnePerYear    = 0.;
     double lastKey=-1, lastN=-1;
     for(auto const& it_FakeRateToNClusters: map_FakeRateToNClusters){
-      if(it_FakeRateToNClusters.first >= cut_PerMonth){
-        cut_KeyNClustersForOnePerMonth = lastKey;
-        cut_NClustersForOnePerMonth    = lastN;
+      if(it_FakeRateToNClusters.first >= cut_PerYear){
+        cut_KeyNClustersForOnePerYear = lastKey;
+        cut_NClustersForOnePerYear    = lastN;
         break;
       }
       lastKey = it_FakeRateToNClusters.first;
       lastN   = it_FakeRateToNClusters.second;
     }
-    if(cut_KeyNClustersForOnePerMonth == -1){
-      std::cout << "KeyNClustersForOnePerMonth is " << cut_KeyNClustersForOnePerMonth << std::endl;
+    if(cut_KeyNClustersForOnePerYear == -1){
+      std::cout << "KeyNClustersForOnePerYear is " << cut_KeyNClustersForOnePerYear << std::endl;
     } else {
       outFile   << Config << " "
                 << TimeW << " "
                 << eff << " "
                 << bkgd << " "
-                << cut_NClustersForOnePerMonth << std::endl;
+                << cut_NClustersForOnePerYear << std::endl;
     }
     std::cout << "CONFIG: " << Config << " TIMEWINDOW: " << TimeW
               << ", EFF: " << eff
               << ", BKGD: " << Bkgd
-              << ", PERMONTH CUT:  " << cut_NClustersForOnePerMonth << std::endl;
+              << ", PERYEAR CUT:  " << cut_NClustersForOnePerYear << std::endl;
 
     //LOOP OVER THE DIFFERENT FAKE RATES AND CUTS TO GET FAKE RATE
     //AGAINST GALACTIC COVERAGE.
@@ -293,7 +293,7 @@ int main()
       h_NeighbourhoodEffiency->SetDirectory(0);
       // FOR EACH BURST SIZE
       if(!faster ||
-         (faster && it_FakeRateToNClusters.first  == cut_KeyNClustersForOnePerMonth && it_FakeRateToNClusters.second == cut_NClustersForOnePerMonth)) {
+         (faster && it_FakeRateToNClusters.first  == cut_KeyNClustersForOnePerYear && it_FakeRateToNClusters.second == cut_NClustersForOnePerYear)) {
         map_NClustersAndEventsToBurstEff = makeEfficiencyVEvents(eff, mean, rms, fracInTW, it_FakeRateToNClusters.second,
                                                                  burstMin, burstMax,
                                                                  map_ClustersToMaxEffEvent);
@@ -302,18 +302,18 @@ int main()
                                     h_NeighbourhoodEffiency, map_ClustersToMaxEffEvent, map_ClustersToCoverage);
       }
 
-      // MAKE THE 1 PER MONTH HISTOGRAMS.
-      if(it_FakeRateToNClusters.first  == cut_KeyNClustersForOnePerMonth &&
-         it_FakeRateToNClusters.second == cut_NClustersForOnePerMonth){
+      // MAKE THE 1 PER YEAR HISTOGRAMS.
+      if(it_FakeRateToNClusters.first  == cut_KeyNClustersForOnePerYear &&
+         it_FakeRateToNClusters.second == cut_NClustersForOnePerYear){
         std::cout << "Iteration " << count_Loop << std::endl;
-        std::cout << "it_FakeRateToNClusters->first  " << it_FakeRateToNClusters.first  << " cut_KeyNClustersForOnePerMonth " << cut_KeyNClustersForOnePerMonth << std::endl;
-        std::cout << "it_FakeRateToNClusters->second " << it_FakeRateToNClusters.second << " cut_NClustersForOnePerMonth    " << cut_NClustersForOnePerMonth    << std::endl;
+        std::cout << "it_FakeRateToNClusters->first  " << it_FakeRateToNClusters.first  << " cut_KeyNClustersForOnePerYear " << cut_KeyNClustersForOnePerYear << std::endl;
+        std::cout << "it_FakeRateToNClusters->second " << it_FakeRateToNClusters.second << " cut_NClustersForOnePerYear    " << cut_NClustersForOnePerYear    << std::endl;
         TH1D *h_EfficiencyVEvents   = new TH1D(Form("h_EfficiencyVEvents_Config%i_TW%.3f",Config,TimeW),
                                                Form("h_EfficiencyVEvents_Config%i_TW%.3f",Config,TimeW),
                                                burstMax-burstMin+1, burstMin, burstMax);
         for(int i = burstMin; i <= burstMax; i++){
           int bin = h_EfficiencyVEvents->FindBin(i);
-          h_EfficiencyVEvents->SetBinContent(bin,map_NClustersAndEventsToBurstEff[{cut_NClustersForOnePerMonth,i}]);
+          h_EfficiencyVEvents->SetBinContent(bin,map_NClustersAndEventsToBurstEff[{cut_NClustersForOnePerYear,i}]);
         }
         f_Output->cd();
         h_EfficiencyVEvents->Write();

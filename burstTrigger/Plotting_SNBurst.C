@@ -162,29 +162,24 @@ int main()
   stk_FakeRateVNClusters->GetYaxis()->SetTitle("Trigger Rate, (Hz)");
   stk_FakeRateVNClusters->GetXaxis()->SetLimits(0,map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax());
   double range = map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax() - map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmin();
+  TText *t_perYear = new TText(map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax()-0.15*range, 1.7e-8,    "1/Year");
   TText *t_perMonth  = new TText(map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax()-0.15*range, 2e-7,    "1/Month");
-  TText *t_perWeek   = new TText(map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax()-0.15*range, 1.65e-6, "1/Week");
-  TText *t_perDay    = new TText(map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax()-0.15*range, 1.16e-5, "1/Day");
+  TLine *l_perYear = new TLine(0, 3.44e-8, map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax(), 3.44e-8);
   TLine *l_perMonth  = new TLine(0, 4.13e-7, map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax(), 4.13e-7);
-  TLine *l_perWeek   = new TLine(0, 1.65e-6, map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax(), 1.65e-6);
-  TLine *l_perDay    = new TLine(0, 1.16e-5, map_h_FakeRateVNClusters.begin()->second->GetXaxis()->GetXmax(), 1.16e-5);
+
+  l_perYear->SetLineColor(4);
   l_perMonth->SetLineColor(4);
-  l_perWeek ->SetLineColor(4);
-  l_perDay  ->SetLineColor(4);
+  l_perYear->SetLineWidth(3);
   l_perMonth->SetLineWidth(3);
-  l_perWeek ->SetLineWidth(3);
-  l_perDay  ->SetLineWidth(3);
+  t_perYear->Draw();
   t_perMonth->Draw();
-  t_perWeek ->Draw();
-  t_perDay  ->Draw();
+  l_perYear->Draw();
   l_perMonth->Draw();
-  l_perWeek ->Draw();
-  l_perDay  ->Draw();
   gPad->RedrawAxis();
   c_Global->Print("Results.pdf");
 
   c_Global->SetLogx(false);
-  THStack *stk_EfficiencyVEvents = new THStack("stk_EfficiencyVEvents", "Efficiency vs. Number of Events in SN Burst, Fake Trigger Rate: 1/Month");
+  THStack *stk_EfficiencyVEvents = new THStack("stk_EfficiencyVEvents", "Efficiency vs. Number of Events in SN Burst, Fake Trigger Rate: 1/Year");
   for(auto const& it_Config : map_ConfigToEffAndBkgd){
     stk_EfficiencyVEvents->Add(map_h_EfficiencyVEvents[it_Config.first]);
   }
@@ -198,7 +193,7 @@ int main()
   gPad->RedrawAxis();
   c_Global->Print("Results.pdf");
 
-  THStack *stk_EfficiencyVDistance = new THStack("stk_EfficiencyVDistance", "Efficiency vs. Distance to SN, Fake Trigger Rate: 1/Month");
+  THStack *stk_EfficiencyVDistance = new THStack("stk_EfficiencyVDistance", "Efficiency vs. Distance to SN, Fake Trigger Rate: 1/Year");
   for(auto const& it_Config : map_ConfigToEffAndBkgd){
     stk_EfficiencyVDistance->Add(map_h_EfficiencyVDistance[it_Config.first]);
   }
@@ -213,7 +208,7 @@ int main()
 
 
   gStyle->SetOptStat(0);
-  THStack *stk_EffGalaxy = new THStack("stk_EffGalaxy", "Galactic Neighbourhood Coverage, Fake Trigger Rate 1/Month");
+  THStack *stk_EffGalaxy = new THStack("stk_EffGalaxy", "Galactic Neighbourhood Coverage, Fake Trigger Rate 1/Year");
 
   stk_EffGalaxy->Add(h_SNProbabilityVDistance);
 
@@ -250,13 +245,13 @@ int main()
   for(auto const& it_Config : map_ConfigToEffAndBkgd){
     map_g_ROC[it_Config.first]->Draw("P");
   }
-  TLine *l_perMonth_2 = new TLine(minX, 4.13e-7, maxX, 4.13e-7);
-  l_perMonth_2->SetLineColor(1);
-  l_perMonth_2->SetLineWidth(3);
-  TText *t_perMonth_2 = new TText(minX+0.015, 8e-7, "1/Month");
+  TLine *l_perYear_2 = new TLine(minX, 3.44e-8, maxX, 3.44e-8);
+  l_perYear_2->SetLineColor(1);
+  l_perYear_2->SetLineWidth(3);
+  TText *t_perYear_2 = new TText(minX+0.015, 7e-8, "1/Year");
   gPad->RedrawAxis();
-  l_perMonth_2->Draw();
-  t_perMonth_2->Draw();
+  l_perYear_2->Draw();
+  t_perYear_2->Draw();
   c_Global->Print("Results.pdf");
   c_Global->Print("Results.pdf]");
 
