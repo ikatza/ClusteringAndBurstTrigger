@@ -206,9 +206,9 @@ int Clustering::ClusterAll(int inNEvent){
 
     for(fCurrentConfig=ConfigBegin; fCurrentConfig<ConfigEnd; ++fCurrentConfig) {
       fClustEng  ->SetTimeWindow     (fvec_cut_TimeWindowSize  [fCurrentConfig]);
-      fClustEng  ->SetTimeWindowOpt  (0.8);
-      fClustEng  ->SetPositionOpt    (300);
-      fClustEng  ->SetBucketSize     (2000);
+      fClustEng  ->SetTimeWindowOpt  (fvec_cut_TimeWindowOpt[fCurrentConfig]);
+      fClustEng  ->SetPositionOpt    (fvec_cut_PositionOpt[fCurrentConfig]);
+      fClustEng  ->SetBucketSize     (fvec_cut_BucketSize[fCurrentConfig]);
       fClustEng  ->SetChannelWidth   (fvec_cut_AdjChanTolerance[fCurrentConfig]);
       fClustSelec->SetMinChannel     (fvec_cut_MinChannels     [fCurrentConfig]);
       fClustSelec->SetMinChannelWidth(fvec_cut_MinChanWidth    [fCurrentConfig]);

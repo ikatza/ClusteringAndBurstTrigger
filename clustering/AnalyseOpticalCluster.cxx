@@ -22,7 +22,7 @@ TProfile* SetUpTProfileGenType(std::string name, std::string title) {
   for(auto const& it : h.ShortGenName)
     p_->GetXaxis()->SetBinLabel(it.first+1, it.second.c_str());
   return p_;
-  
+
 };
 
 std::map<int, int> GetMapOfHit(std::vector<int> const* GenType){
@@ -36,14 +36,15 @@ std::map<int, int> GetMapOfHit(std::vector<int> const* GenType){
 int main(int argc, char** argv){
 
   int opt;
-  // Shut GetOpt error messages down (return '?'): 
+  // Shut GetOpt error messages down (return '?'):
   extern char *optarg;
   extern int  optopt;
 
   int nHitCut=-1;
   std::string InputFile="";
   std::string OutputFile="OpticalCluster.pdf";
-  while ( (opt = getopt(argc, argv, "n:o:i:")) != -1 ) {  // for each option...
+  int InputConfig=5;
+  while ( (opt = getopt(argc, argv, "n:o:i:c:")) != -1 ) {  // for each option...
     switch ( opt ) {
     case 'n':
       nHitCut = atoi(optarg);
@@ -54,6 +55,9 @@ int main(int argc, char** argv){
     case 'o':
       OutputFile = optarg;
       break;
+    case 'c':
+        InputConfig = atoi(optarg);
+        break;
     case '?':  // unknown option...
       std::cerr << "Unknown option: '" << char(optopt) << "'!" << std::endl;
       break;
@@ -84,7 +88,7 @@ int main(int argc, char** argv){
   double YWidth        ;
   double ZWidth        ;
   double SumPE         ;
-  
+
 
   std::vector<int>    * PDSHit_GenType   = NULL;
   std::vector<double> * PDSHit_X         = NULL;
@@ -94,7 +98,7 @@ int main(int argc, char** argv){
   std::vector<double> * PDSHit_Width     = NULL;
   std::vector<double> * PDSHit_PE        = NULL;
   std::vector<double> * PDSHit_OpChannel = NULL;
-  
+
   std::vector<double> * MarlTime = NULL;
   std::vector<double> * ENu      = NULL;
   std::vector<double> * ENu_Lep  = NULL;
@@ -105,7 +109,7 @@ int main(int argc, char** argv){
   std::vector<double> * DirX     = NULL;
   std::vector<double> * DirY     = NULL;
   std::vector<double> * DirZ     = NULL;
- 
+
   TTree* t_ClusteredOptHit = (TTree*)f_Input->Get("ClusteredOpticalHit");
   t_ClusteredOptHit->SetBranchAddress("Cluster",        &Cluster       );
   t_ClusteredOptHit->SetBranchAddress("Config",         &Config        );
@@ -160,7 +164,7 @@ int main(int argc, char** argv){
 
   for(int i=0; i<t_ClusteredOptHit->GetEntries();++i) {
     t_ClusteredOptHit->GetEntry(i);
-    if (Config==5) map_event_entry_opti[Event].push_back(i);
+    if (Config==InputConfig) map_event_entry_opti[Event].push_back(i);
   }
 
   TCanvas c;
@@ -195,11 +199,11 @@ int main(int argc, char** argv){
 
   TEfficiency* eff_enu_opti  = new TEfficiency("eff_enu_opti",  ";E#nu [MeV];Efficiency", 10, 0, 30);
 
-  t_ClusteredOptHit->Project("h_nhit_sign_opti", "NHits", "Type==1 && Config==5");
-  t_ClusteredOptHit->Project("h_nhit_back_opti", "NHits", "Type==0 && Config==5");
+  t_ClusteredOptHit->Project("h_nhit_sign_opti", "NHits", Form("Type==1 && Config==%i",InputConfig));
+  t_ClusteredOptHit->Project("h_nhit_back_opti", "NHits", Form("Type==0 && Config==%i",InputConfig));
   std::vector<double> max = {h_nhit_sign_opti->GetMaximum(),
                              h_nhit_back_opti->GetMaximum()};
-  
+
   h_nhit_sign_opti->SetMaximum((*std::max_element(max.begin(),max.end()))*2);
   h_nhit_sign_opti->SetMinimum(0.1);
   gPad->SetLogy();
@@ -216,8 +220,8 @@ int main(int argc, char** argv){
   h_npe_sign_opti->SetLineWidth(2);
   h_npe_back_opti->SetLineWidth(2);
 
-  t_ClusteredOptHit->Project("h_npe_sign_opti", "SumPE", "Type==1 && Config==5");
-  t_ClusteredOptHit->Project("h_npe_back_opti", "SumPE", "Type==0 && Config==5");
+  t_ClusteredOptHit->Project("h_npe_sign_opti", "SumPE", Form("Type==1 && Config==%i",InputConfig));
+  t_ClusteredOptHit->Project("h_npe_back_opti", "SumPE", Form("Type==0 && Config==%i",InputConfig));
   max = {h_npe_sign_opti->GetMaximum(),
          h_npe_back_opti->GetMaximum()};
   h_npe_sign_opti->SetMaximum((*std::max_element(max.begin(),max.end()))*2);
@@ -225,10 +229,12 @@ int main(int argc, char** argv){
   gPad->SetLogy();
   h_npe_sign_opti->SetBinContent(h_npe_sign_opti->GetXaxis()->GetNbins(),
                                  h_npe_sign_opti->GetBinContent(h_npe_sign_opti->GetXaxis()->GetNbins()+1));
+  h_npe_back_opti->SetBinContent(h_npe_back_opti->GetXaxis()->GetNbins(),
+                                 h_npe_back_opti->GetBinContent(h_npe_back_opti->GetXaxis()->GetNbins()+1));
   h_npe_sign_opti->Draw("");
   h_npe_back_opti->Draw("SAME");
   c.Print("opt_clustering.pdf");
-  
+
   TH1D* h_twidth_sign_opti = new TH1D("h_twidth_sign_opti", ";Time Width [#mus];Clusters", 20,0, 10);
   TH1D* h_twidth_back_opti = new TH1D("h_twidth_back_opti", ";Time Width [#mus];Clusters", 20,0, 10);
   h_twidth_sign_opti->SetLineColor(kRed);
@@ -238,8 +244,8 @@ int main(int argc, char** argv){
   h_twidth_sign_opti->SetLineWidth(2);
   h_twidth_back_opti->SetLineWidth(2);
 
-  t_ClusteredOptHit->Project("h_twidth_sign_opti", "TimeWidth", "Type==1 && Config==5");
-  t_ClusteredOptHit->Project("h_twidth_back_opti", "TimeWidth", "Type==0 && Config==5");
+  t_ClusteredOptHit->Project("h_twidth_sign_opti", "TimeWidth", Form("Type==1 && Config==%i",InputConfig));
+  t_ClusteredOptHit->Project("h_twidth_back_opti", "TimeWidth", Form("Type==0 && Config==%i",InputConfig));
   h_twidth_sign_opti->SetStats(0);
   h_twidth_back_opti->SetStats(0);
   AddOverflow(h_twidth_sign_opti);
@@ -252,7 +258,7 @@ int main(int argc, char** argv){
   h_twidth_sign_opti->Draw("");
   h_twidth_back_opti->Draw("SAME");
   c.Print("opt_clustering.pdf");
-  
+
   TH1D* h_width_sign_opti = new TH1D("h_width_sign_opti", ";Z Width [cm];Clusters", 6, 0., 6.*232.39);
   TH1D* h_width_back_opti = new TH1D("h_width_back_opti", ";Z Width [cm];Clusters", 6, 0., 6.*232.39);
   h_width_sign_opti->SetLineColor(kRed);
@@ -262,8 +268,8 @@ int main(int argc, char** argv){
   h_width_sign_opti->SetLineWidth(2);
   h_width_back_opti->SetLineWidth(2);
 
-  t_ClusteredOptHit->Project("h_width_sign_opti", "ZWidth", "Type==1 && Config==5");
-  t_ClusteredOptHit->Project("h_width_back_opti", "ZWidth", "Type==0 && Config==5");
+  t_ClusteredOptHit->Project("h_width_sign_opti", "ZWidth", Form("Type==1 && Config==%i",InputConfig));
+  t_ClusteredOptHit->Project("h_width_back_opti", "ZWidth", Form("Type==0 && Config==%i",InputConfig));
   max = {h_width_sign_opti->GetMaximum(),
          h_width_back_opti->GetMaximum()};
   h_width_sign_opti->SetMaximum((*std::max_element(max.begin(),max.end()))*2);
@@ -282,8 +288,8 @@ int main(int argc, char** argv){
   h_ywidth_sign_opti->SetLineWidth(2);
   h_ywidth_back_opti->SetLineWidth(2);
 
-  t_ClusteredOptHit->Project("h_ywidth_sign_opti", "YWidth", "Type==1 && Config==5");
-  t_ClusteredOptHit->Project("h_ywidth_back_opti", "YWidth", "Type==0 && Config==5");
+  t_ClusteredOptHit->Project("h_ywidth_sign_opti", "YWidth", Form("Type==1 && Config==%i",InputConfig));
+  t_ClusteredOptHit->Project("h_ywidth_back_opti", "YWidth", Form("Type==0 && Config==%i",InputConfig));
   max = {h_ywidth_sign_opti->GetMaximum(),
          h_ywidth_back_opti->GetMaximum()};
   h_ywidth_sign_opti->SetMaximum((*std::max_element(max.begin(),max.end()))*2);
@@ -295,7 +301,7 @@ int main(int argc, char** argv){
   int nDetectedSignalEventOpti=0;
   int nBackgroundEventOpti=0;
   std::cout << "map_event_entry_opti " << map_event_entry_opti.size() << std::endl;
-  
+
   for(auto const& it : map_event_entry_opti) {
     int ncluster_sign=0;
     int ncluster_back=0;
@@ -335,7 +341,7 @@ int main(int argc, char** argv){
 
   max = {p_gentype_sign_opti->GetMaximum(),
          p_gentype_back_opti->GetMaximum()};
-  
+
   p_gentype_sign_opti->SetMaximum((*std::max_element(max.begin(),max.end()))*2);
   p_gentype_sign_opti->SetMinimum(0.1);
   gPad->SetGridx();
@@ -356,7 +362,7 @@ int main(int argc, char** argv){
   gPad->SetLogx();
 
   auto axis = h_ncluster_sign_opti->GetXaxis();
-  axis->SetLimits(0.5,1000); 
+  axis->SetLimits(0.5,1000);
   h_ncluster_sign_opti->Draw("");
   h_ncluster_back_opti->Draw("SAME");
   c.Print("opt_clustering.pdf");
@@ -371,4 +377,3 @@ int main(int argc, char** argv){
   return 1;
 
 };
-
